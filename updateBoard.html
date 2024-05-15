@@ -12,6 +12,7 @@
     列数：<input id="col" />
     炸弹数：<input id="bombNum" />
     <button onclick="reset()">重置</button>
+    当前扫描数量：<span id="scanNum">0</span>
     <div id="board"></div>
     </div>
 </body>
@@ -54,7 +55,8 @@
         }
         mouseDownCount = 0;
         time = null;
-        isScan = false
+        isScan = false;
+        tNums = 0;
 
         constructor(element, w = 3, h = 3, nums = 1) {
             document.oncontextmenu = function (event) {
@@ -81,7 +83,6 @@
                     itemDiv.id = `${i + 1}-${j + 1}`
                     itemDiv.className = 'item'
                     itemDiv.onmousedown = (e) => {
-                        console.log(e.button)
                         e.stopPropagation()
                         if (this.status.isLose || this.status.isWin) {
                             alert('游戏结束，请重新开始')
@@ -102,7 +103,6 @@
                         }
                     }
                     itemDiv.onmouseup = (e) => {
-                        console.log(e.button)
                         if (e.button === 0 || e.button === 2) {
                             this.mouseDownCount -= 1;
                             this.time = null;
@@ -152,7 +152,9 @@
             const [x, y] = id.split('-')
             let item = document.getElementById(id)
             if (this.arr[Number(x) - 1][Number(y) - 1] === 'E' || this.arr[Number(x) - 1][Number(y) - 1] === 'M') {
+                this.setTNums(this.tNums + (item.style.backgroundColor === 'red' ? -1 : 1))
                 item.style.backgroundColor = item.style.backgroundColor === 'red' ? '' : 'red'
+                document.getElementById('scanNum').innerHTML = this.tNums
                 this.updated()
             }
             this.win()
@@ -196,11 +198,11 @@
                     if (this.isScan && (!itemDiv.style.backgroundColor || itemDiv.style.backgroundColor !== 'red')) {
                         itemDiv.style.backgroundColor = 'yellow'
                     } else if (!this.isScan) {
-                        if (/[0-9]/.test(board[curRow][curCol]) && Number(board[curRow][curCol]) === tNums && aroundNums !== tNums) {
+                        if (testNum(board[curRow][curCol]) && Number(board[curRow][curCol]) === tNums && aroundNums !== tNums) {
                             this.lose()
                             return
                         }
-                        if (/[0-9]/.test(board[curRow][curCol]) && Number(board[curRow][curCol]) === tNums && itemDiv.style.backgroundColor !== 'red') {
+                        if (testNum(board[curRow][curCol]) && Number(board[curRow][curCol]) === tNums && !testNum(board[x][y]) && itemDiv.style.backgroundColor !== 'red') {
                             this.click(`${x + 1}-${y + 1}`)
                         }
                         this.updated()
@@ -230,7 +232,7 @@
                         div.style.color = 'blue'
                         div.style.fontWeight = 'bold'
                     }
-                    div.innerHTML = /[0-9]/.test(this.arr[i][j]) ? this.arr[i][j] : ''
+                    div.innerHTML = testNum(this.arr[i][j]) ? this.arr[i][j] : ''
                 }
             }
         }
@@ -254,6 +256,7 @@
                 isLose: false,
                 isStart: false
             }
+            this.setTNums(0)
             let total = document.getElementById('total')
             this.element.removeChild(total)
         }
@@ -264,6 +267,10 @@
                     itemDiv.innerHTML = this.arr[i][j]
                 }
             }
+        }
+        setTNums (num) {
+            this.tNums = num
+            document.getElementById('scanNum').innerHTML = num
         }
     }
     let board = new Board(document.getElementById('board'));
@@ -280,7 +287,7 @@
         }
     }
     function testNum (e) {
-        return /[0-9]/.test(e)
+        return /[1-9]/.test(e)
     }
 </script>
 
