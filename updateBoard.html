@@ -81,6 +81,7 @@
                     itemDiv.id = `${i + 1}-${j + 1}`
                     itemDiv.className = 'item'
                     itemDiv.onmousedown = (e) => {
+                        console.log(e.button)
                         e.stopPropagation()
                         if (this.status.isLose || this.status.isWin) {
                             alert('游戏结束，请重新开始')
@@ -95,10 +96,13 @@
                                 this.isScan = true
                                 console.log('同时按了左右键！');
                                 this.scanCilck(itemDiv.id)
+                            } else {
+                                this.updated()
                             }
                         }
                     }
                     itemDiv.onmouseup = (e) => {
+                        console.log(e.button)
                         if (e.button === 0 || e.button === 2) {
                             this.mouseDownCount -= 1;
                             this.time = null;
@@ -114,7 +118,12 @@
                             console.log('放开了左右键！');
                             this.scanCilck(itemDiv.id)
                         }
-                        this.showAll()
+                        // this.showAll()
+                    }
+                    itemDiv.onmouseout = () => {
+                        this.mouseDownCount = 0;
+                        this.time = null;
+                        this.updated()
                     }
                     rowDiv.appendChild(itemDiv)
                     sliceArr[i][j] = sliceArr[i][j] ? this.boardList[1] : this.boardList[0]
@@ -129,17 +138,15 @@
             item.style.backgroundColor = ''
             const [x, y] = id.split('-')
             let clickArr = [Number(x) - 1, Number(y) - 1]
-            if (this.arr[Number(x) - 1][Number(y) - 1] === 'E') {
+            if (this.arr[Number(x) - 1][Number(y) - 1] === 'E' || this.arr[Number(x) - 1][Number(y) - 1] === 'M') {
                 this.arr = updateBoard(this.arr, clickArr)
             }
             this.updated()
             if (this.arr[Number(x) - 1][Number(y) - 1] === 'X') {
-                this.status.isLose = true
-                alert('你输了')
-                this.showAll()
+                this.lose()
                 return
             }
-            this.canWin()
+            this.win()
         }
         rightClick (id) {
             const [x, y] = id.split('-')
@@ -148,7 +155,7 @@
                 item.style.backgroundColor = item.style.backgroundColor === 'red' ? '' : 'red'
                 this.updated()
             }
-            this.canWin()
+            this.win()
         }
         scanCilck (id) {
             const [curX, curY] = id.split('-')
@@ -167,31 +174,33 @@
             ]
             let aroundList = []
             let tNums = 0
+            let aroundNums = 0
             a.forEach(([x, y]) => {
                 if (x >= 0 && x < board.length && y >= 0 && y < board[0].length) {
                     let itemDiv = document.getElementById(`${x + 1}-${y + 1}`)
                     if (itemDiv.style.backgroundColor === 'red') {
                         tNums += 1
+                        if (board[x][y] === 'M') {
+                            aroundNums += 1
+                        }
                     }
                     aroundList.push(board[x][y])
                 }
             })
-            const mNums = aroundList.filter(e => e === 'M').length
-            console.log(tNums)
             for (let [x, y] of a) {
                 if (x >= 0 && x < board.length && y >= 0 && y < board[0].length) {
+                    if (this.status.isLose || this.status.isWin) {
+                        break
+                    }
                     let itemDiv = document.getElementById(`${x + 1}-${y + 1}`)
                     if (this.isScan && (!itemDiv.style.backgroundColor || itemDiv.style.backgroundColor !== 'red')) {
                         itemDiv.style.backgroundColor = 'yellow'
                     } else if (!this.isScan) {
-                        console.log(/[0-9]/.test(board[curRow][curCol]))
+                        if (/[0-9]/.test(board[curRow][curCol]) && Number(board[curRow][curCol]) === tNums && aroundNums !== tNums) {
+                            this.lose()
+                            return
+                        }
                         if (/[0-9]/.test(board[curRow][curCol]) && Number(board[curRow][curCol]) === tNums && itemDiv.style.backgroundColor !== 'red') {
-                            if (mNums) {
-                                this.status.isLose = true
-                                alert('你输了')
-                                this.showAll()
-                                return
-                            }
                             this.click(`${x + 1}-${y + 1}`)
                         }
                         this.updated()
@@ -225,13 +234,18 @@
                 }
             }
         }
-        canWin () {
+        win () {
             let arr = this.arr.flat()
             let num = arr.filter(item => item !== 'E' && item !== "M").length
             if (num === this.w * this.h - this.nums) {
                 this.status.isWin = true
                 alert('你赢了')
             }
+        }
+        lose () {
+            this.status.isLose = true
+            alert('你输了')
+            this.showAll()
         }
         distory () {
             this.arr = []
